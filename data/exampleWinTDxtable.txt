@@ -1,0 +1,16 @@
+20-05 - Perelman Memorial -- Reserve                         Cross Table, Page 1
+
+  No. Gr    Name(Team)                   St   Rate   Rd 1  Rd 2  Rd 3  Rd 4  Score
+
+   1.    Chaveriat, Lee (1) ...........  WI     1471 W4    W7    W3    A2      3.0
+
+   2.    Saadati, Navid (3,Saadat) ....  WI      710 W5    -H-   W7    A1      2.5
+
+   3.    Mellema, Timothy J (5) .......  WI      429 -B-   W6    L1    A4      2.0
+
+   4.    Saadati, Farid (4,Saadat) ....  WI      651 L1    -H-   W5    A3      1.5
+
+   5.    Ammerman, Elena Jan (2,Ammerm)  WI      925 L2    -B-   L4    A7      1.0
+   6.    Ammerman, Eli (6,Ammerm) .....  WI      427 D7    L3    -H-   -N-     1.0
+
+   7.    Wells, Bradley (7) ...........  WI     nnnn D6    L1    L2    A5      0.5
