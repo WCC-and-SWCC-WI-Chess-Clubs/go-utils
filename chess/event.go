@@ -4,15 +4,16 @@ import "time"
 
 // Event represents a USCF-rated chess event
 type Event struct {
-	ID         string
-	Href       string
-	StartDate  time.Time
-	FinishDate time.Time
-	Name       string
-	City       string
-	State      string
-	Players    string
-	Sections   string
+	ID           string
+	Href         string
+	StartDate    time.Time
+	FinishDate   time.Time
+	Name         string
+	NameOverride string
+	City         string
+	State        string
+	Players      string
+	Sections     string
 }
 
 func NewEvent() *Event {
@@ -20,6 +21,13 @@ func NewEvent() *Event {
 		StartDate:  time.Now(),
 		FinishDate: time.Now(),
 	}
+}
+
+func (e *Event) GetName() string {
+	if len(e.NameOverride) > 0 {
+		return e.NameOverride
+	}
+	return e.Name
 }
 
 func (e *Event) String() string {

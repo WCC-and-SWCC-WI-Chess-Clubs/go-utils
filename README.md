@@ -1,11 +1,5 @@
-All symbols check out — every export used is defined. Go isn't available in the sandbox, so I can't do a live build, but the static checks pass cleanly.Loaded tools, read a file, used a toolLoaded tools, read a file, used a toolGo code written to python-utils/go/. Structure mirrors the Python:
 
-go/go.mod — module chess-utils, no external deps (stdlib only)
-go/main.go — all 8 CLI commands
-go/chess/ — event, player, section, tournament, ratings, reader, transformer
-go/utils/ — anchor, string
-
-To build and run from the go/ directory:
+To build and run from the project root directory:
 
 	go build -o chess-utils .
 	./chess-utils postUpdate in.txt
@@ -27,7 +21,7 @@ First step is to build; must have 'go' in your path:
 
 The command line looks like this (from in the root dir):
 
-`./chess-utils <option> <parameter>`
+`./chess-utils  <option> <parameter>`
 
 All of the content is written to the console, so you can either copy the content from there, or redirect the output to a file. As always, you may have some cleanup to do if you grab content from the console...
 
@@ -37,7 +31,7 @@ All of the content is written to the console, so you can either copy the content
 * Weekly post generation options -
   * `postUpdate`
     * This is the main use case for these scripts - weekly update posts for in-flight events.
-    * command line is `(python.exe path) main.py postUpdate <path to input text file>`
+    * command line is `./chess-utils postUpdate <path to input text file>`
     * This expects an input file written by WinTD containing two sections (Open and Reserve, in that order) of X-table report data followed by two sections (Open and Reserve, in that order) of pairings data
     * To generate this file, within WinTD take the following steps:
       * Pair the upcoming round for both sections
@@ -48,7 +42,7 @@ All of the content is written to the console, so you can either copy the content
       * Select the menu option "Reports -> Print Game Windows"
     * All 4 sections will be in the report window (named something like "NONAME01.TXT")
       * Copy the contents to the file you use in the command line (I use a temp file called "in.txt" in the root directory, so my command line looks like: 
-        * `(python.exe path) main.py postUpdate in.txt`
+        * `./chess-utils postUpdate in.txt`
     * Run the script as noted above for `postUpdate` 
     * The table-formatted HTML for this week's post is written to the console or file if you've redirected it.
     * Paste that HTML into your blog post and you're done ! 
@@ -57,38 +51,44 @@ All of the content is written to the console, so you can either copy the content
     * NOTE 2 - This assumes 4 round tournaments.  This is hard-coded in the `processWinTDFile()` function in `main.py` (haven't had the need to make this cleaner.
   * `ratedEventByID`
     * Generates HTML for a completed, rated event.  Takes the event ID as its input parameter, and goes out to the USCF site to get the results.
-      * `(python.exe path) main.py ratedEventByID 202507101092` (for example)
+      * `./chess-utils ratedEventByID 202507101092` (for example)
     *
     * NOTE 1 - This generates a complete page, including title and subtitle.  You will likely need to trim this for a blog post.
   * `ratedEventFromFile`
     * This option should not be used anymore, since the format of USCF website's crosstables changed (dramatically) in November 2025.
     * identical to `ratedEventByID` except pulls the USCF HTML source from a given input file, rather than getting it from the web.
       * The URL to get the HTML for an event from looks like this: https://www.uschess.org/msa/XtblMain.php?202507101092 where the value after the '?' character is your event ID
-      * `(python.exe path) main.py ratedEventFromFile a-local-file-you-saved-for-event-xxxxx.html`
+      * `./chess-utils ratedEventFromFile a-local-file-you-saved-for-event-xxxxx.html`
   * `ratedEventFromRatingReport`
     * similar to `ratedEventByID` and `ratedEventFromFile` except the input file is the text from a USCF generated rating report (not what's posted on the web) 
-      * `(python.exe path) main.py file local-file-with-rating-report-text.txt`
+      * `./chess-utils file local-file-with-rating-report-text.txt`
   * `updatePostFromWinTdXTable`
     * This is one component of the `postUpdate` option that expects one section's winTD crosstable report file as input 
-      * `(python.exe path) main.py winTD one-section-xtable-from-wintd.txt`
+      * `./chess-utils winTD one-section-xtable-from-wintd.txt`
   * `updatePostFromWinTdPairings`
     * This is the other component of the `postUpdate` option that expects one section's winTD pairings report file as input 
-      * `(python.exe path) main.py pairings one-section-of-pairings-from-wintd.txt`
+      * `./chess-utils pairings one-section-of-pairings-from-wintd.txt`
 * Static website page content options -
-  * `clubEvents`
+  * `clubEvents <clubAbbrev>`
     * This generates a page with links to all events rated for this affiliate - grouped by year.
-    * The Affiliate ID used is hard-coded to A5008948 (WCC) in reader.py
-    * There is a facility to override displayed names, place the event ID and desired names in `data/event_names.json` as needed
+    * The Affiliate ID used is determined by the club abbreviation passed in.
+    * There is a facility to override displayed names, place the event ID and desired names in `data/<clubAbbrev>_event_names.json` as needed
     * The output is stored in `data/web/past_tournaments.html` - copy to the website repo
     * Needs to be periodically run to pick up recent events.
-    * `(python.exe path) main.py clubEvents`
+    * `./chess-utils clubEvents`
   * `winnersPage`
     * similar to `clubEvents` but builds a page grouped by year for all winners of the club championship and waukesha memorial
     * Uses the `data/winners.json` file to find the event IDs for these and get the winners from the web, if no ID is available, uses the winner listed in that file
       * This is because not all events are named consistently - this ensures we get all of them
     * The output is stored in `data/web/champions.html` - copy to the website repo
     * Needs to be periodically run to pick up recent events.
-    * `(python.exe path) main.py winnersPage`
+    * `./chess-utils winnersPage`
+  * `generateEventsJS <clubAbbrev>`
+    * Same idea as `clubEvents`, but for either WCC or SWCC, and emits a JS module instead of an HTML page
+    * Takes the club abbreviation as its input parameter (e.g. `wcc` for WCC)
+    * Same `data/<clubAbbrev>_event_names.json` override facility as `clubEvents`
+    * The output is stored in `data/web/<clubAbbrev>_events.js` as `export const TOURNAMENTS = { '2026': [ { name, url }, ... ], ... }`, grouped by year, newest year and newest event first
+    * `./chess-utils  generateEventsJS wcc`
 
 # New USCF Ratings API
 The new USCF ratings API is available. You can find documentation here: 

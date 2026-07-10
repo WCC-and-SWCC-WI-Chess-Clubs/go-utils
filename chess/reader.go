@@ -12,6 +12,8 @@ import (
 
 const (
 	muirBaseCrosstableURL = "https://ratings.uschess.org/event/"
+	SwccAffiliateID       = "A6011047"
+	WccAffiliateID        = "A5008948"
 )
 
 // Reader provides high-level access to USCF event data
@@ -153,7 +155,13 @@ func (r *Reader) GetPastEvent(tournamentID string) (*Tournament, error) {
 }
 
 // GetPastEvents fetches all WCC-affiliated events from the ratings API
-func (r *Reader) GetPastEvents() ([]*Event, error) {
+func (r *Reader) GetPastEvents(theAffiliateID string) ([]*Event, error) {
 	api := NewRatingsAPI()
-	return api.QueryEvents()
+	return api.QueryEvents(theAffiliateID)
+}
+
+// GetPastEventsForAffiliate fetches all events for the given affiliate ID from the ratings API
+func (r *Reader) GetPastEventsForAffiliate(affiliateID string) ([]*Event, error) {
+	api := NewRatingsAPI()
+	return api.QueryEventsByAffiliate(affiliateID)
 }

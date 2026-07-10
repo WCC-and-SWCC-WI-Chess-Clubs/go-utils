@@ -13,8 +13,9 @@ import (
 const (
 	muirAPIBaseURL = "https://ratings-api.uschess.org/api/v1"
 	muirEventURL   = "https://ratings.uschess.org/event/"
-	wccAffiliateID = "A5008948"
-	apiPageSize    = 100
+	//swccAffiliateID = "A6011047"
+	//wccAffiliateID  = "A5008948"
+	apiPageSize = 100
 )
 
 // RatingsAPI is a client for the USCF Ratings API
@@ -70,7 +71,12 @@ func (r *RatingsAPI) createEvent(item affiliateEventItem) *Event {
 }
 
 // QueryEvents retrieves all WCC-affiliated rated events, sorted newest-first
-func (r *RatingsAPI) QueryEvents() ([]*Event, error) {
+func (r *RatingsAPI) QueryEvents(theAffiliateID string) ([]*Event, error) {
+	return r.QueryEventsByAffiliate(theAffiliateID)
+}
+
+// QueryEventsByAffiliate retrieves all rated events for the given affiliate ID, sorted newest-first
+func (r *RatingsAPI) QueryEventsByAffiliate(affiliateID string) ([]*Event, error) {
 	var eventList []*Event
 	for index := 0; ; index++ {
 		if index > 0 {
@@ -80,7 +86,7 @@ func (r *RatingsAPI) QueryEvents() ([]*Event, error) {
 		fmt.Println(time.Now())
 		offset := index * apiPageSize
 		url := fmt.Sprintf("%s/affiliates/%s/events?SortBy=StartDate&Offset=%d&Size=%d",
-			muirAPIBaseURL, wccAffiliateID, offset, apiPageSize)
+			muirAPIBaseURL, affiliateID, offset, apiPageSize)
 
 		var page affiliateEventsPage
 		if err := r.fetchJSON(url, &page); err != nil {

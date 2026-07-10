@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -12,6 +13,8 @@ import (
 	"chess-utils/chess"
 	"chess-utils/utils"
 )
+
+const EVENT_FLOOR_YEAR = 2019
 
 var classCycle = []string{"wccColor1", "wccColor2", "wccColor3", "wccColor4", "wccColor5", "wccColor6"}
 
@@ -204,10 +207,52 @@ func processPastEvent() error {
 	return nil
 }
 
-func processPastEvents() error {
+func filterEvents(events []*chess.Event) []*chess.Event {
+	results := make([]*chess.Event, 0, 0)
+	for _, event := range events {
+		if event.FinishDate.Year() >= EVENT_FLOOR_YEAR {
+			results = append(results, event)
+		}
+	}
+	return results
+}
+
+func addEventNameOverrides(events []*chess.Event, theClubAbbrev string) error {
+	// Load name overrides
+	filename := getEventOverridesFilename(theClubAbbrev)
+	overrideData, err := os.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("read %s: %w", filename, err)
+	}
+	var eventNameOverrides map[string]string
+	if err := json.Unmarshal(overrideData, &eventNameOverrides); err != nil {
+		return err
+	}
+
+	for _, event := range events {
+		if overrideName, ok := eventNameOverrides[event.ID]; ok {
+			event.NameOverride = overrideName
+		}
+	}
+
+	return nil
+}
+
+func getEventOverridesFilename(theClubAbbrev string) string {
+	switch theClubAbbrev {
+	case "wcc":
+		return "data/wcc_event_names.json"
+	case "swcc":
+		return "data/swcc_event_names.json"
+	default:
+		return ""
+	}
+}
+
+func processPastEvents(theAffiliateID, theClubAbbrev string) error {
 	fmt.Println("processing past club events")
 	r := chess.NewReader()
-	events, err := r.GetPastEvents()
+	events, err := r.GetPastEvents(theAffiliateID)
 	if err != nil {
 		return err
 	}
@@ -216,13 +261,9 @@ func processPastEvents() error {
 		return nil
 	}
 
-	// Load name overrides
-	overrideData, err := os.ReadFile("data/event_names.json")
+	events = filterEvents(events)
+	err = addEventNameOverrides(events, theClubAbbrev)
 	if err != nil {
-		return fmt.Errorf("read event_names.json: %w", err)
-	}
-	var eventNameOverrides map[string]string
-	if err := json.Unmarshal(overrideData, &eventNameOverrides); err != nil {
 		return err
 	}
 
@@ -238,11 +279,6 @@ func processPastEvents() error {
 	utils.PrintEventTableHeader(fOut, []string{"Year", "Tournament"})
 
 	for _, event := range events {
-		outName := event.Name
-		if override, ok := eventNameOverrides[event.ID]; ok {
-			outName = override
-		}
-
 		newYear := 0
 		if event.FinishDate.Year() != currentYear {
 			currentYear = event.FinishDate.Year()
@@ -250,7 +286,7 @@ func processPastEvents() error {
 		}
 
 		classIndex = (classIndex + 1) % len(classCycle)
-		utils.PrintPriorEventRow(fOut, newYear, outName, event.Href, classCycle[classIndex])
+		utils.PrintPriorEventRow(fOut, newYear, event.GetName(), event.Href, classCycle[classIndex])
 	}
 
 	utils.PrintTableClose(fOut)
@@ -259,22 +295,98 @@ func processPastEvents() error {
 
 	// Also echo IDs + names to stdout for reference
 	for _, event := range events {
-		outName := event.Name
-		if override, ok := eventNameOverrides[event.ID]; ok {
-			outName = override
+		fmt.Printf("%q: %q,\n", event.ID, event.GetName())
+	}
+	return nil
+}
+
+// processGenerateEventsJS handles the 'generateEventsJS' command: fetches all rated
+// events for the given affiliate ID and writes data/web/events.js, a JS module
+// exporting TOURNAMENTS grouped by year (newest year and newest event first).
+func processGenerateEventsJS(theAffiliateId, theClubAbbrev string) error {
+	if len(os.Args) <= 2 {
+		return fmt.Errorf("usage: chess-utils generateEventsJS <clubAbbrev>")
+	}
+
+	fmt.Println("processing events for affiliate", theAffiliateId)
+	r := chess.NewReader()
+	events, err := r.GetPastEventsForAffiliate(theAffiliateId)
+	if err != nil {
+		return err
+	}
+	if len(events) == 0 {
+		fmt.Println("No events returned for affiliate", theAffiliateId)
+		return nil
+	}
+
+	events = filterEvents(events)
+	err = addEventNameOverrides(events, theClubAbbrev)
+	if err != nil {
+		return err
+	}
+
+	foutName := "data/web/" + theClubAbbrev + "_events.js"
+	fOut, err := os.Create(foutName)
+	if err != nil {
+		return err
+	}
+	defer fOut.Close()
+
+	//   '2018 and earlier': [
+	//    { name: 'View full archive on USCF →', url: 'https://ratings.uschess.org/affiliate/A6011047' },
+	//  ],
+	// Group events by year, preserving the newest-first order within each year
+	var years []int
+	byYear := make(map[int][]*chess.Event)
+
+	for _, event := range events {
+		year := event.FinishDate.Year()
+		if _, ok := byYear[year]; !ok {
+			years = append(years, year)
 		}
+		byYear[year] = append(byYear[year], event)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(years)))
+
+	fmt.Fprintln(fOut, "export const TOURNAMENTS = {")
+	for _, year := range years {
+		fmt.Fprintf(fOut, "  '%d': [\n", year)
+		for _, event := range byYear[year] {
+			fmt.Fprintf(fOut, "    { name: %s, url: %s },\n", jsQuote(event.GetName()), jsQuote(event.Href))
+		}
+		fmt.Fprintln(fOut, "  ],")
+	}
+
+	url := "https://ratings.uschess.org/affiliate/" + theAffiliateId
+	fmt.Fprintf(fOut, "  '%d': [\n", (EVENT_FLOOR_YEAR - 1))
+	fmt.Fprintf(fOut, "    { name: %s, url: %s },\n", jsQuote("'View full archive on USCF →'"), jsQuote(url))
+	fmt.Fprintln(fOut, "  ],")
+
+	fmt.Fprintln(fOut, "};")
+
+	// Also echo IDs + names to stdout for reference, same as clubEvents
+	for _, event := range events {
+		outName := event.GetName()
 		fmt.Printf("%q: %q,\n", event.ID, outName)
 	}
 	return nil
+}
+
+// jsQuote wraps a string in single quotes, escaping backslashes and single
+// quotes so it can be safely embedded as a JS string literal.
+func jsQuote(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `'`, `\'`)
+	return "'" + s + "'"
 }
 
 func generateWinnersPage() error {
 	fmt.Println("Note: This takes about 10 minutes. The USCF Ratings API is rate-limited.")
 	fmt.Println(" start:", time.Now())
 
-	overrideData, err := os.ReadFile("data/event_names.json")
+	overrideData, err := os.ReadFile("data/wcc_event_names.json")
 	if err != nil {
-		return fmt.Errorf("read event_names.json: %w", err)
+		return fmt.Errorf("read wcc_event_names.json: %w", err)
 	}
 	var eventNameOverrides map[string]string
 	if err := json.Unmarshal(overrideData, &eventNameOverrides); err != nil {
@@ -352,7 +464,7 @@ func splitFixedLine(line string, numRounds int) []string {
 //
 // 012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
 //
-//	101.  ___  Templin, Aethe (2.0,Templi,1960)  ___  Coons, James Jay (2.0,1724)
+//  101. ___  Templin, Aethe (2.0,Templi,1960)  ___  Coons, James Jay (2.0,1724)
 func splitGamesLine(line string) []string {
 	if line == "" {
 		return nil
@@ -378,7 +490,8 @@ Options:
   updatePostFromWinTdXTable <file>   Crosstable HTML from one WinTD section file
   updatePostFromWinTdPairings <file> Pairings HTML from one WinTD section file
   clubEvents                         Generate data/web/past_tournaments.html
-  winnersPage                        Generate data/web/champions.html`)
+  winnersPage                        Generate data/web/champions.html
+  generateEventsJS <clubAbbrev>      Generate data/web/events.js; arg is either wcc or swcc`)
 }
 
 func main() {
@@ -404,9 +517,41 @@ func main() {
 	case "updatePostFromWinTdPairings":
 		err = processGamesFile()
 	case "clubEvents":
-		err = processPastEvents()
+		if len(os.Args) >= 3 {
+			var clubAbbrev string
+			var affiliateId string
+			switch os.Args[2] {
+			case "wcc":
+				clubAbbrev = os.Args[2]
+				affiliateId = chess.WccAffiliateID
+			case "swcc":
+				clubAbbrev = os.Args[2]
+				affiliateId = chess.SwccAffiliateID
+			}
+			err = processPastEvents(affiliateId, clubAbbrev)
+		} else {
+			usage()
+			os.Exit(1)
+		}
 	case "winnersPage":
 		err = generateWinnersPage()
+	case "generateEventsJS":
+		if len(os.Args) >= 3 {
+			var clubAbbrev string
+			var affiliateId string
+			switch os.Args[2] {
+			case "wcc":
+				clubAbbrev = os.Args[2]
+				affiliateId = chess.WccAffiliateID
+			case "swcc":
+				clubAbbrev = os.Args[2]
+				affiliateId = chess.SwccAffiliateID
+			}
+			err = processGenerateEventsJS(affiliateId, clubAbbrev)
+		} else {
+			usage()
+			os.Exit(1)
+		}
 	default:
 		usage()
 		os.Exit(1)
