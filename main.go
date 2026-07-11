@@ -207,16 +207,6 @@ func processPastEvent() error {
 	return nil
 }
 
-func filterEvents(events []*chess.Event) []*chess.Event {
-	results := make([]*chess.Event, 0, 0)
-	for _, event := range events {
-		if event.FinishDate.Year() >= EVENT_FLOOR_YEAR {
-			results = append(results, event)
-		}
-	}
-	return results
-}
-
 func addEventNameOverrides(events []*chess.Event, theClubAbbrev string) error {
 	// Load name overrides
 	filename := getEventOverridesFilename(theClubAbbrev)
@@ -252,7 +242,7 @@ func getEventOverridesFilename(theClubAbbrev string) string {
 func processPastEvents(theAffiliateID, theClubAbbrev string) error {
 	fmt.Println("processing past club events")
 	r := chess.NewReader()
-	events, err := r.GetPastEvents(theAffiliateID)
+	events, err := r.GetPastEvents(theAffiliateID, EVENT_FLOOR_YEAR)
 	if err != nil {
 		return err
 	}
@@ -261,7 +251,6 @@ func processPastEvents(theAffiliateID, theClubAbbrev string) error {
 		return nil
 	}
 
-	events = filterEvents(events)
 	err = addEventNameOverrides(events, theClubAbbrev)
 	if err != nil {
 		return err
@@ -310,7 +299,7 @@ func processGenerateEventsJS(theAffiliateId, theClubAbbrev string) error {
 
 	fmt.Println("processing events for affiliate", theAffiliateId)
 	r := chess.NewReader()
-	events, err := r.GetPastEventsForAffiliate(theAffiliateId)
+	events, err := r.GetPastEvents(theAffiliateId, EVENT_FLOOR_YEAR)
 	if err != nil {
 		return err
 	}
@@ -319,7 +308,6 @@ func processGenerateEventsJS(theAffiliateId, theClubAbbrev string) error {
 		return nil
 	}
 
-	events = filterEvents(events)
 	err = addEventNameOverrides(events, theClubAbbrev)
 	if err != nil {
 		return err

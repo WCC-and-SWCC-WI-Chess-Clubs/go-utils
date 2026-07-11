@@ -70,13 +70,21 @@ func (r *RatingsAPI) createEvent(item affiliateEventItem) *Event {
 	return e
 }
 
-// QueryEvents retrieves all WCC-affiliated rated events, sorted newest-first
-func (r *RatingsAPI) QueryEvents(theAffiliateID string) ([]*Event, error) {
-	return r.QueryEventsByAffiliate(theAffiliateID)
+func (r *RatingsAPI) buildUrl(theAffiliateID string, theOffset int, theCutoffYear int) string {
+	var url string
+	if theCutoffYear >= 1990 {
+		fromDate := fmt.Sprintf("%d-01-01", theCutoffYear)
+		url = fmt.Sprintf("%s/affiliates/%s/events?FromDate=%s&SortBy=StartDate&Offset=%d&Size=%d",
+			muirAPIBaseURL, theAffiliateID, fromDate, theOffset, apiPageSize)
+	} else {
+		url = fmt.Sprintf("%s/affiliates/%s/events?SortBy=StartDate&Offset=%d&Size=%d",
+			muirAPIBaseURL, theAffiliateID, theOffset, apiPageSize)
+	}
+	return url
 }
 
-// QueryEventsByAffiliate retrieves all rated events for the given affiliate ID, sorted newest-first
-func (r *RatingsAPI) QueryEventsByAffiliate(affiliateID string) ([]*Event, error) {
+// QueryEvents retrieves all WCC-affiliated rated events, sorted newest-first
+func (r *RatingsAPI) QueryEvents(theAffiliateID string, theCutoffYear int) ([]*Event, error) {
 	var eventList []*Event
 	for index := 0; ; index++ {
 		if index > 0 {
@@ -85,8 +93,7 @@ func (r *RatingsAPI) QueryEventsByAffiliate(affiliateID string) ([]*Event, error
 		}
 		fmt.Println(time.Now())
 		offset := index * apiPageSize
-		url := fmt.Sprintf("%s/affiliates/%s/events?SortBy=StartDate&Offset=%d&Size=%d",
-			muirAPIBaseURL, affiliateID, offset, apiPageSize)
+		url := r.buildUrl(theAffiliateID, offset, theCutoffYear)
 
 		var page affiliateEventsPage
 		if err := r.fetchJSON(url, &page); err != nil {
