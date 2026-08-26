@@ -2,8 +2,9 @@
 To build and run from the project root directory:
 
 	go build -o chess-utils .
-	./chess-utils postUpdate in.txt
 	./chess-utils ratedEventByID 202602280803
+    ./chess-utils generateEventsJS wcc
+	./chess-utils postUpdate in.txt
 
 Two intentional deviations from the Python:
 
