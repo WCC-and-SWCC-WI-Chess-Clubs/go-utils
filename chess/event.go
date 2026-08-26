@@ -1,6 +1,12 @@
 package chess
 
-import "time"
+import (
+	"fmt"
+	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+)
 
 // Event represents a USCF-rated chess event
 type Event struct {
@@ -9,7 +15,7 @@ type Event struct {
 	StartDate    time.Time
 	FinishDate   time.Time
 	Name         string
-	NameOverride string
+	nameOverride string
 	City         string
 	State        string
 	Players      string
@@ -24,10 +30,19 @@ func NewEvent() *Event {
 }
 
 func (e *Event) GetName() string {
-	if len(e.NameOverride) > 0 {
-		return e.NameOverride
+	if len(e.nameOverride) > 0 {
+		return e.nameOverride
 	}
-	return e.Name
+	return ToTitleCase(e.Name)
+}
+
+func (e *Event) SetNameOverride(aName string) {
+	if len(aName) > 0 {
+		e.nameOverride = aName
+		if aName == ToTitleCase(e.Name) {
+			fmt.Printf("Name override not necessary for Event (%s) %s \n", e.ID, aName)
+		}
+	}
 }
 
 func (e *Event) String() string {
@@ -65,4 +80,11 @@ func (e *Event) SetFinishDate(dateStr string) error {
 	}
 	e.FinishDate = t
 	return nil
+}
+
+func ToTitleCase(s string) string {
+	// Create an English title caser
+	caser := cases.Title(language.English)
+	output := caser.String(s)
+	return output
 }

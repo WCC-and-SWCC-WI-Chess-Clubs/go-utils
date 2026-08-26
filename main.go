@@ -221,7 +221,7 @@ func addEventNameOverrides(events []*chess.Event, theClubAbbrev string) error {
 
 	for _, event := range events {
 		if overrideName, ok := eventNameOverrides[event.ID]; ok {
-			event.NameOverride = overrideName
+			event.SetNameOverride(overrideName)
 		}
 	}
 
