@@ -3,3 +3,5 @@
 out
 chess-utils
 chess-utils.exe
+data/web/swcc_events.js
+data/web/wcc_events.js

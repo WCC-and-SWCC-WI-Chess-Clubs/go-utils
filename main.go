@@ -353,10 +353,11 @@ func processGenerateEventsJS(theAffiliateId, theClubAbbrev string) error {
 	fmt.Fprintln(fOut, "};")
 
 	// Also echo IDs + names to stdout for reference, same as clubEvents
-	for _, event := range events {
-		outName := event.GetName()
-		fmt.Printf("%q: %q,\n", event.ID, outName)
-	}
+	// commented out, because the output was being used to populate the 'preferred names' files, and that's not a good
+	//for _, event := range events {
+	//	outName := event.GetName()
+	//	fmt.Printf("%q: %q,\n", event.ID, outName)
+	//}
 	return nil
 }
 
