@@ -1,7 +1,9 @@
 package chess
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -15,7 +17,7 @@ type Event struct {
 	Href         string
 	StartDate    time.Time
 	FinishDate   time.Time
-	Name         string
+	name         string
 	nameOverride string
 	City         string
 	State        string
@@ -34,13 +36,24 @@ func (e *Event) GetName() string {
 	if len(e.nameOverride) > 0 {
 		return e.nameOverride
 	}
-	return ToTitleCase(e.Name)
+	return e.name
+}
+
+func (e *Event) SetName(aName string) {
+	if strings.TrimSpace(aName) != "" {
+		// always coerce the Tournament Name to title case
+		e.name = toTitleCase(aName)
+	} else {
+		err := errors.New("Tournament name may not be empty")
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(1)
+	}
 }
 
 func (e *Event) SetNameOverride(aName string) {
 	if len(aName) > 0 {
 		e.nameOverride = aName
-		if aName == ToTitleCase(e.Name) {
+		if aName == toTitleCase(e.name) {
 			fmt.Printf("Name override not necessary for Event (%s) %s \n", e.ID, aName)
 		}
 	}
@@ -51,7 +64,7 @@ func (e *Event) String() string {
 		"href: " + e.Href + "\n" +
 		"start: " + e.StartDate.Format("2006-01-02") + "\n" +
 		"finish: " + e.FinishDate.Format("2006-01-02") + "\n" +
-		"name: " + e.Name + "\n" +
+		"name: " + e.name + "\n" +
 		"sections: " + e.Sections + "\n" +
 		"players: " + e.Players + "\n" +
 		"city: " + e.City + "\n" +
@@ -83,16 +96,9 @@ func (e *Event) SetFinishDate(dateStr string) error {
 	return nil
 }
 
-func TwoTitleCase(s string) string {
+func toTitleCase(s string) string {
 	// Create an English title caser
 	caser := cases.Title(language.English)
 	output := caser.String(s)
 	return output
-}
-func ToTitleCase(s string) string {
-	words := strings.Fields(s)
-	for i, word := range words {
-		words[i] = cases.Title(language.English).String(word)
-	}
-	return strings.Join(words, " ")
 }

@@ -59,7 +59,7 @@ type affiliateEventItem struct {
 func (r *RatingsAPI) createEvent(item affiliateEventItem) *Event {
 	e := NewEvent()
 	e.ID = item.ID
-	e.Name = item.Name
+	e.SetName(item.Name)
 	e.City = item.City
 	e.State = item.StateCode
 	e.Sections = strconv.Itoa(item.SectionCount)
