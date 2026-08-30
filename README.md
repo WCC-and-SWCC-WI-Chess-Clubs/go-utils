@@ -55,7 +55,7 @@ All of the content is written to the console, so you can either copy the content
       * `./chess-utils ratedEventByID 202507101092` (for example)
     *
     * NOTE 1 - This generates a complete page, including title and subtitle.  You will likely need to trim this for a blog post.
-  * `ratedEventFromFile`
+  * ~~`ratedEventFromFile`~~
     * This option should not be used anymore, since the format of USCF website's crosstables changed (dramatically) in November 2025.
     * identical to `ratedEventByID` except pulls the USCF HTML source from a given input file, rather than getting it from the web.
       * The URL to get the HTML for an event from looks like this: https://www.uschess.org/msa/XtblMain.php?202507101092 where the value after the '?' character is your event ID
@@ -70,21 +70,23 @@ All of the content is written to the console, so you can either copy the content
     * This is the other component of the `postUpdate` option that expects one section's winTD pairings report file as input 
       * `./chess-utils pairings one-section-of-pairings-from-wintd.txt`
 * Static website page content options -
-  * `clubEvents <clubAbbrev>`
+  * ~~`clubEvents <clubAbbrev>`~~
+    * Deprecated. Instead, use `generateEventsJS` 
     * This generates a page with links to all events rated for this affiliate - grouped by year.
     * The Affiliate ID used is determined by the club abbreviation passed in.
     * There is a facility to override displayed names, place the event ID and desired names in `data/<clubAbbrev>_event_names.json` as needed
     * The output is stored in `data/web/past_tournaments.html` - copy to the website repo
-    * Needs to be periodically run to pick up recent events.
+    * Needs to be periodically run to pick up recent events.~~
     * `./chess-utils clubEvents`
-  * `winnersPage`
+    * ~~`winnersPage`~~
+    * Deprecated. There is no replacement, since the list of past champions is just a JavaScript array.
     * similar to `clubEvents` but builds a page grouped by year for all winners of the club championship and waukesha memorial
     * Uses the `data/winners.json` file to find the event IDs for these and get the winners from the web, if no ID is available, uses the winner listed in that file
       * This is because not all events are named consistently - this ensures we get all of them
     * The output is stored in `data/web/champions.html` - copy to the website repo
     * Needs to be periodically run to pick up recent events.
     * `./chess-utils winnersPage`
-  * `generateEventsJS <clubAbbrev>`
+    * `generateEventsJS <clubAbbrev>`
     * Same idea as `clubEvents`, but for either WCC or SWCC, and emits a JS module instead of an HTML page
     * Takes the club abbreviation as its input parameter (e.g. `wcc` for WCC)
     * Same `data/<clubAbbrev>_event_names.json` override facility as `clubEvents`

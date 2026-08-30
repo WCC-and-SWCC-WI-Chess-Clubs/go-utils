@@ -2,16 +2,14 @@ package main
 
 import (
 	"bufio"
+	"chess-utils/chess"
+	"chess-utils/utils"
 	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
-	"time"
-
-	"chess-utils/chess"
-	"chess-utils/utils"
 )
 
 const EVENT_FLOOR_YEAR = 2019
@@ -239,56 +237,6 @@ func getEventOverridesFilename(theClubAbbrev string) string {
 	}
 }
 
-func processPastEvents(theAffiliateID, theClubAbbrev string) error {
-	fmt.Println("processing past club events")
-	r := chess.NewReader()
-	events, err := r.GetPastEvents(theAffiliateID, EVENT_FLOOR_YEAR)
-	if err != nil {
-		return err
-	}
-	if len(events) == 0 {
-		fmt.Println("No events returned from GetPastEvents()")
-		return nil
-	}
-
-	err = addEventNameOverrides(events, theClubAbbrev)
-	if err != nil {
-		return err
-	}
-
-	fOut, err := os.Create("data/web/past_tournaments.html")
-	if err != nil {
-		return err
-	}
-	defer fOut.Close()
-
-	classIndex := -1
-	currentYear := 0
-	utils.PrintPageHeader(fOut, "Past Tournaments", "- results linked to events -")
-	utils.PrintEventTableHeader(fOut, []string{"Year", "Tournament"})
-
-	for _, event := range events {
-		newYear := 0
-		if event.FinishDate.Year() != currentYear {
-			currentYear = event.FinishDate.Year()
-			newYear = currentYear
-		}
-
-		classIndex = (classIndex + 1) % len(classCycle)
-		utils.PrintPriorEventRow(fOut, newYear, event.GetName(), event.Href, classCycle[classIndex])
-	}
-
-	utils.PrintTableClose(fOut)
-	utils.PrintDivClose(fOut)
-	utils.PrintPageClose(fOut)
-
-	// Also echo IDs + names to stdout for reference
-	for _, event := range events {
-		fmt.Printf("%q: %q,\n", event.ID, event.GetName())
-	}
-	return nil
-}
-
 // processGenerateEventsJS handles the 'generateEventsJS' command: fetches all rated
 // events for the given affiliate ID and writes data/web/events.js, a JS module
 // exporting TOURNAMENTS grouped by year (newest year and newest event first).
@@ -369,55 +317,6 @@ func jsQuote(s string) string {
 	return "'" + s + "'"
 }
 
-func generateWinnersPage() error {
-	fmt.Println("Note: This takes about 10 minutes. The USCF Ratings API is rate-limited.")
-	fmt.Println(" start:", time.Now())
-
-	overrideData, err := os.ReadFile("data/wcc_event_names.json")
-	if err != nil {
-		return fmt.Errorf("read wcc_event_names.json: %w", err)
-	}
-	var eventNameOverrides map[string]string
-	if err := json.Unmarshal(overrideData, &eventNameOverrides); err != nil {
-		return err
-	}
-
-	fOut, err := os.Create("data/web/champions.html")
-	if err != nil {
-		return err
-	}
-	defer fOut.Close()
-
-	r := chess.NewReader()
-	winnersByYear, err := r.GetWinners()
-	if err != nil {
-		return err
-	}
-
-	classIndex := -1
-	priorYear := 0
-	utils.PrintPageHeader(fOut, "Past Champions", "- honoring our club history -")
-	utils.PrintEventTableHeader(fOut, []string{"Year", "Club Champion", "Waukesha Memorial Champion"})
-
-	for _, winner := range winnersByYear {
-		classIndex = (classIndex + 1) % len(classCycle)
-		if winner.Year != priorYear {
-			utils.PrintWinnersRow(fOut, winner.Year, winner.CCWinner, winner.CCLink,
-				winner.MemWinner, winner.MemLink, classCycle[classIndex])
-		} else {
-			utils.PrintWinnersRow(fOut, 0, winner.CCWinner, winner.CCLink,
-				winner.MemWinner, winner.MemLink, classCycle[classIndex])
-		}
-		priorYear = winner.Year
-	}
-
-	utils.PrintTableClose(fOut)
-	utils.PrintDivClose(fOut)
-	utils.PrintPageClose(fOut)
-	fmt.Println("finish:", time.Now())
-	return nil
-}
-
 // splitFixedLine parses a fixed-width rating report line
 //
 // 012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -474,13 +373,13 @@ func usage() {
 Options:
   postUpdate <file>                  Weekly update post from WinTD combined report
   ratedEventByID <eventID>           Blog HTML for a completed rated event
-  ratedEventFromFile <file>          [DEPRECATED] Use ratedEventByID instead
   ratedEventFromRatingReport <file>  Blog HTML from USCF rating report text file
   updatePostFromWinTdXTable <file>   Crosstable HTML from one WinTD section file
   updatePostFromWinTdPairings <file> Pairings HTML from one WinTD section file
-  clubEvents                         Generate data/web/past_tournaments.html
-  winnersPage                        Generate data/web/champions.html
-  generateEventsJS <clubAbbrev>      Generate data/web/events.js; arg is either wcc or swcc`)
+  generateEventsJS <clubAbbrev>      Generate data/web/events.js; arg is either wcc or swcc
+  clubEvents                         [DEPRECATED] Use generateEventsJS instead
+  winnersPage                        [DEPRECATED] There is no replacement, since past champions are in a JavaScript array
+  ratedEventFromFile <file>          [DEPRECATED] Use ratedEventByID instead`)
 }
 
 func main() {
@@ -506,24 +405,13 @@ func main() {
 	case "updatePostFromWinTdPairings":
 		err = processGamesFile()
 	case "clubEvents":
-		if len(os.Args) >= 3 {
-			var clubAbbrev string
-			var affiliateId string
-			switch os.Args[2] {
-			case "wcc":
-				clubAbbrev = os.Args[2]
-				affiliateId = chess.WccAffiliateID
-			case "swcc":
-				clubAbbrev = os.Args[2]
-				affiliateId = chess.SwccAffiliateID
-			}
-			err = processPastEvents(affiliateId, clubAbbrev)
-		} else {
-			usage()
-			os.Exit(1)
-		}
+		fmt.Println("The option 'clubEvents' should not be used anymore.")
+		fmt.Println("Please use 'generateEventsJS'.")
+		os.Exit(1)
 	case "winnersPage":
-		err = generateWinnersPage()
+		fmt.Println("The option 'winnersPage' should not be used anymore.")
+		fmt.Println("There is no direct replacement'.")
+		os.Exit(1)
 	case "generateEventsJS":
 		if len(os.Args) >= 3 {
 			var clubAbbrev string
