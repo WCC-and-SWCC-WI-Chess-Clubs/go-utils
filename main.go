@@ -295,13 +295,14 @@ func processGenerateEventsJS(theAffiliateId, theClubAbbrev string) error {
 
 	url := "https://ratings.uschess.org/affiliate/" + theAffiliateId
 	fmt.Fprintf(fOut, "  '%d': [\n", (EVENT_FLOOR_YEAR - 1))
-	fmt.Fprintf(fOut, "    { name: %s, url: %s },\n", jsQuote("'View full archive on USCF →'"), jsQuote(url))
+	fmt.Fprintf(fOut, "    { name: %s, url: %s },\n", jsQuote("View full archive on USCF"), jsQuote(url))
 	fmt.Fprintln(fOut, "  ],")
 
 	fmt.Fprintln(fOut, "};")
 
 	// Also echo IDs + names to stdout for reference, same as clubEvents
-	// commented out, because the output was being used to populate the 'preferred names' files, and that's not a good
+	// commented out:
+	//		because the output was being used to populate the 'preferred names' files, and we don't want to do that
 	//for _, event := range events {
 	//	outName := event.GetName()
 	//	fmt.Printf("%q: %q,\n", event.ID, outName)
