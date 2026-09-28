@@ -69,6 +69,13 @@ All of the content is written to the console, so you can either copy the content
   * `updatePostFromWinTdPairings`
     * This is the other component of the `postUpdate` option that expects one section's winTD pairings report file as input 
       * `./chess-utils pairings one-section-of-pairings-from-wintd.txt`
+  * `convertCsv <file> [separator]`
+    * Converts a CSV (or other delimited) file to a `wccCrosstable` HTML table fragment on stdout
+    * First line becomes the header row; blank lines skipped; values trimmed and HTML-escaped; short rows padded
+    * Quoted values (embedded separators, `""` escapes) handled by Go's `encoding/csv`; surrounding quotes removed
+    * Separator: `comma` (default), `tab`, `pipe`, `semicolon`, or any single character
+      * `./chess-utils convertCsv standings.csv`
+      * `./chess-utils convertCsv standings.txt tab`
 * Static website page content options -
   * ~~`clubEvents <clubAbbrev>`~~
     * Deprecated. Instead, use `generateEventsJS` 

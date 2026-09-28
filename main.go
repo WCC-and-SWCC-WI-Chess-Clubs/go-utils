@@ -190,6 +190,28 @@ func processGamesLines(w *os.File, inLines []string) {
 	fmt.Fprintln(w, "</table>")
 }
 
+// processCsvFile handles 'convertCsv <file> [separator]': converts a delimited
+// file to a wccCrosstable HTML table fragment on stdout. First line is the header.
+func processCsvFile() error {
+	if len(os.Args) < 3 {
+		return fmt.Errorf("usage: chess-utils convertCsv <file> [separator]")
+	}
+	sepArg := ""
+	if len(os.Args) >= 4 {
+		sepArg = os.Args[3]
+	}
+	sep, err := utils.ParseSeparator(sepArg)
+	if err != nil {
+		return err
+	}
+	f, err := os.Open(os.Args[2])
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return utils.ConvertCsvToHTML(f, os.Stdout, sep)
+}
+
 func processPastEvent() error {
 	if len(os.Args) <= 2 {
 		return fmt.Errorf("usage: chess-utils ratedEventByID <tournamentId>")
@@ -378,6 +400,7 @@ Options:
   updatePostFromWinTdXTable <file>   Crosstable HTML from one WinTD section file
   updatePostFromWinTdPairings <file> Pairings HTML from one WinTD section file
   generateEventsJS <clubAbbrev>      Generate data/web/events.js; arg is either wcc or swcc
+  convertCsv <file> [separator]      HTML table from CSV; separator: comma (default), tab, pipe, semicolon, or a single char
   clubEvents                         [DEPRECATED] Use generateEventsJS instead
   winnersPage                        [DEPRECATED] There is no replacement, since past champions are in a JavaScript array
   ratedEventFromFile <file>          [DEPRECATED] Use ratedEventByID instead`)
@@ -405,6 +428,8 @@ func main() {
 		err = processWinTDFile()
 	case "updatePostFromWinTdPairings":
 		err = processGamesFile()
+	case "convertCsv":
+		err = processCsvFile()
 	case "clubEvents":
 		fmt.Println("The option 'clubEvents' should not be used anymore.")
 		fmt.Println("Please use 'generateEventsJS'.")
