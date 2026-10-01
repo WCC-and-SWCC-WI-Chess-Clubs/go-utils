@@ -59,7 +59,7 @@ All of the content is written to the console, so you can either copy the content
     * This option should not be used anymore, since the format of USCF website's crosstables changed (dramatically) in November 2025.
     * identical to `ratedEventByID` except pulls the USCF HTML source from a given input file, rather than getting it from the web.
       * The URL to get the HTML for an event from looks like this: https://www.uschess.org/msa/XtblMain.php?202507101092 where the value after the '?' character is your event ID
-      * `./chess-utils ratedEventFromFile a-local-file-you-saved-for-event-xxxxx.html`
+      * ~~`./chess-utils ratedEventFromFile a-local-file-you-saved-for-event-xxxxx.html`~~
   * `ratedEventFromRatingReport`
     * similar to `ratedEventByID` and `ratedEventFromFile` except the input file is the text from a USCF generated rating report (not what's posted on the web) 
       * `./chess-utils file local-file-with-rating-report-text.txt`
@@ -84,7 +84,7 @@ All of the content is written to the console, so you can either copy the content
     * There is a facility to override displayed names, place the event ID and desired names in `data/<clubAbbrev>_event_names.json` as needed
     * The output is stored in `data/web/past_tournaments.html` - copy to the website repo
     * Needs to be periodically run to pick up recent events.~~
-    * `./chess-utils clubEvents`
+    * ~~`./chess-utils clubEvents`~~
     * ~~`winnersPage`~~
     * Deprecated. There is no replacement, since the list of past champions is just a JavaScript array.
     * similar to `clubEvents` but builds a page grouped by year for all winners of the club championship and waukesha memorial
@@ -92,7 +92,7 @@ All of the content is written to the console, so you can either copy the content
       * This is because not all events are named consistently - this ensures we get all of them
     * The output is stored in `data/web/champions.html` - copy to the website repo
     * Needs to be periodically run to pick up recent events.
-    * `./chess-utils winnersPage`
+    * ~~`./chess-utils winnersPage`~~
     * `generateEventsJS <clubAbbrev>`
     * Same idea as `clubEvents`, but for either WCC or SWCC, and emits a JS module instead of an HTML page
     * Takes the club abbreviation as its input parameter (e.g. `wcc` for WCC)
