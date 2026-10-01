@@ -249,7 +249,7 @@ func addEventNameOverrides(events []*chess.Event, theClubAbbrev string) error {
 }
 
 func getEventOverridesFilename(theClubAbbrev string) string {
-	switch theClubAbbrev {
+	switch strings.ToLower(theClubAbbrev) {
 	case "wcc":
 		return "data/wcc_event_names.json"
 	case "swcc":
@@ -262,28 +262,28 @@ func getEventOverridesFilename(theClubAbbrev string) string {
 // processGenerateEventsJS handles the 'generateEventsJS' command: fetches all rated
 // events for the given affiliate ID and writes data/web/events.js, a JS module
 // exporting TOURNAMENTS grouped by year (newest year and newest event first).
-func processGenerateEventsJS(theAffiliateId, theClubAbbrev string) error {
+func processGenerateEventsJS(theClub *chess.Club) error {
 	if len(os.Args) <= 2 {
 		return fmt.Errorf("usage: chess-utils generateEventsJS <clubAbbrev>")
 	}
 
-	fmt.Println("processing events for affiliate", theAffiliateId)
+	fmt.Println("processing events for affiliate", theClub.GetAffiliateId())
 	r := chess.NewReader()
-	events, err := r.GetPastEvents(theAffiliateId, EVENT_FLOOR_YEAR)
+	events, err := r.GetPastEvents(theClub, EVENT_FLOOR_YEAR)
 	if err != nil {
 		return err
 	}
 	if len(events) == 0 {
-		fmt.Println("No events returned for affiliate", theAffiliateId)
+		fmt.Println("No events returned for affiliate", theClub.GetAffiliateId())
 		return nil
 	}
 
-	err = addEventNameOverrides(events, theClubAbbrev)
+	err = addEventNameOverrides(events, theClub.GetAbbreviation())
 	if err != nil {
 		return err
 	}
 
-	foutName := "data/web/" + theClubAbbrev + "_events.js"
+	foutName := "data/web/" + strings.ToLower(theClub.GetAbbreviation()) + "_events.js"
 	fOut, err := os.Create(foutName)
 	if err != nil {
 		return err
@@ -315,7 +315,7 @@ func processGenerateEventsJS(theAffiliateId, theClubAbbrev string) error {
 		fmt.Fprintln(fOut, "  ],")
 	}
 
-	url := "https://ratings.uschess.org/affiliate/" + theAffiliateId
+	url := "https://ratings.uschess.org/affiliate/" + theClub.GetAffiliateId()
 	fmt.Fprintf(fOut, "  '%d': [\n", (EVENT_FLOOR_YEAR - 1))
 	fmt.Fprintf(fOut, "    { name: %s, url: %s },\n", jsQuote("View full archive on USCF"), jsQuote(url))
 	fmt.Fprintln(fOut, "  ],")
@@ -440,17 +440,12 @@ func main() {
 		os.Exit(1)
 	case "generateEventsJS":
 		if len(os.Args) >= 3 {
-			var clubAbbrev string
-			var affiliateId string
-			switch os.Args[2] {
-			case "wcc":
-				clubAbbrev = os.Args[2]
-				affiliateId = chess.WccAffiliateID
-			case "swcc":
-				clubAbbrev = os.Args[2]
-				affiliateId = chess.SwccAffiliateID
+			club, clubErr := chess.GetClub(os.Args[2])
+			if clubErr != nil {
+				fmt.Fprintf(os.Stderr, "error: %v\n", clubErr)
+				os.Exit(1)
 			}
-			err = processGenerateEventsJS(affiliateId, clubAbbrev)
+			err = processGenerateEventsJS(club)
 		} else {
 			usage()
 			os.Exit(1)

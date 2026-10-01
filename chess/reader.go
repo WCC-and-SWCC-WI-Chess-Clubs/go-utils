@@ -155,7 +155,7 @@ func (r *Reader) GetPastEvent(tournamentID string) (*Tournament, error) {
 }
 
 // GetPastEvents fetches all WCC-affiliated events from the ratings API
-func (r *Reader) GetPastEvents(theAffiliateID string, theCutoffYear int) ([]*Event, error) {
+func (r *Reader) GetPastEvents(theClub *Club, theCutoffYear int) ([]*Event, error) {
 	api := NewRatingsAPI()
-	return api.QueryEvents(theAffiliateID, theCutoffYear)
+	return api.QueryEvents(theClub, theCutoffYear)
 }

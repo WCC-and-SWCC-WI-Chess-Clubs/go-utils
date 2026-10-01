@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -23,12 +24,14 @@ type Event struct {
 	State        string
 	Players      string
 	Sections     string
+	club         *Club
 }
 
-func NewEvent() *Event {
+func NewEvent(theClub *Club) *Event {
 	return &Event{
 		StartDate:  time.Now(),
 		FinishDate: time.Now(),
+		club:       theClub,
 	}
 }
 
@@ -41,8 +44,9 @@ func (e *Event) GetName() string {
 
 func (e *Event) SetName(aName string) {
 	if strings.TrimSpace(aName) != "" {
-		// always coerce the Tournament Name to title case
-		e.name = toTitleCase(aName)
+		// always coerce the Tournament Name to title case,
+		// but keep the club abbreviation in its exact form (e.g. "WCC", not "Wcc")
+		e.name = e.restoreClubAbbreviation(toTitleCase(aName))
 	} else {
 		err := errors.New("Tournament name may not be empty")
 		fmt.Fprintln(os.Stderr, "Error:", err)
@@ -53,7 +57,7 @@ func (e *Event) SetName(aName string) {
 func (e *Event) SetNameOverride(aName string) {
 	if len(aName) > 0 {
 		e.nameOverride = aName
-		if aName == toTitleCase(e.name) {
+		if aName == e.name {
 			fmt.Printf("Name override not necessary for Event (%s) %s \n", e.ID, aName)
 		}
 	}
@@ -94,6 +98,20 @@ func (e *Event) SetFinishDate(dateStr string) error {
 	}
 	e.FinishDate = t
 	return nil
+}
+
+// restoreClubAbbreviation replaces any whole-word, case-insensitive occurrence
+// of the club abbreviation in s with the club's exact abbreviation.
+func (e *Event) restoreClubAbbreviation(s string) string {
+	if e.club == nil {
+		return s
+	}
+	abbrev := e.club.GetAbbreviation()
+	if abbrev == "" {
+		return s
+	}
+	re := regexp.MustCompile(`(?i)\b` + regexp.QuoteMeta(abbrev) + `\b`)
+	return re.ReplaceAllLiteralString(s, abbrev)
 }
 
 func toTitleCase(s string) string {

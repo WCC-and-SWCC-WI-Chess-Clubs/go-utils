@@ -56,8 +56,8 @@ type affiliateEventItem struct {
 	City         string `json:"city"`
 }
 
-func (r *RatingsAPI) createEvent(item affiliateEventItem) *Event {
-	e := NewEvent()
+func (r *RatingsAPI) createEvent(theClub *Club, item affiliateEventItem) *Event {
+	e := NewEvent(theClub)
 	e.ID = item.ID
 	e.SetName(item.Name)
 	e.City = item.City
@@ -84,7 +84,7 @@ func (r *RatingsAPI) buildUrl(theAffiliateID string, theOffset int, theCutoffYea
 }
 
 // QueryEvents retrieves all WCC-affiliated rated events, sorted newest-first
-func (r *RatingsAPI) QueryEvents(theAffiliateID string, theCutoffYear int) ([]*Event, error) {
+func (r *RatingsAPI) QueryEvents(theClub *Club, theCutoffYear int) ([]*Event, error) {
 	var eventList []*Event
 	for index := 0; ; index++ {
 		if index > 0 {
@@ -93,7 +93,7 @@ func (r *RatingsAPI) QueryEvents(theAffiliateID string, theCutoffYear int) ([]*E
 		}
 		fmt.Println(time.Now())
 		offset := index * apiPageSize
-		url := r.buildUrl(theAffiliateID, offset, theCutoffYear)
+		url := r.buildUrl(theClub.GetAffiliateId(), offset, theCutoffYear)
 
 		var page affiliateEventsPage
 		if err := r.fetchJSON(url, &page); err != nil {
@@ -103,7 +103,7 @@ func (r *RatingsAPI) QueryEvents(theAffiliateID string, theCutoffYear int) ([]*E
 			break
 		}
 		for _, item := range page.Items {
-			eventList = append(eventList, r.createEvent(item))
+			eventList = append(eventList, r.createEvent(theClub, item))
 		}
 		fmt.Printf("Number of events: %d\n", len(eventList))
 	}
